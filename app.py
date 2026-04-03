@@ -229,8 +229,8 @@ with st.sidebar:
         options=list(df['species'].unique()),
         default=list(df['species'].unique())
     )
-    n_estimators = st.slider("🌲 Number of Trees", 10, 200, 100, step=10)
-    feature_x = st.selectbox("📊 Distribution Feature", iris.feature_names, index=2)
+    n_estimators = st.slider("Number of Trees", 10, 200, 100, step=10)
+    feature_x = st.selectbox("Distribution Feature", iris.feature_names, index=2)
     st.markdown("---")
     st.markdown("<small style='color:#5a5a78'>Iris Dataset · UCI ML Repository<br>150 samples · 3 species · 4 features</small>", unsafe_allow_html=True)
 
@@ -239,8 +239,8 @@ filtered_df = df[df['species'].isin(species_filter)] if species_filter else df
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class='hero'>
-    <h1>Iris Explorer</h1>
-    <p>Interactive machine learning dashboard · Classic UCI Iris Dataset</p>
+    <h1>Iris Data Set Explorer</h1>
+    <p>Iris Dataset</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -266,7 +266,6 @@ with col_a:
     <div class='feat-card'>
         <span class='card-icon'>📊</span>
         <div class='card-title'>Feature Distribution</div>
-        <div class='card-desc'>Histogram with KDE overlay per species for the selected feature.</div>
     </div>
     """, unsafe_allow_html=True)
     if st.button("Show Distribution", key="btn_dist"):
@@ -287,7 +286,6 @@ with col_b:
     <div class='feat-card'>
         <span class='card-icon'>🔍</span>
         <div class='card-title'>Pairplot</div>
-        <div class='card-desc'>Scatter matrix across all 4 features colored by species.</div>
     </div>
     """, unsafe_allow_html=True)
     if st.button("Show Pairplot", key="btn_pair"):
@@ -311,7 +309,6 @@ with col_c:
     <div class='feat-card'>
         <span class='card-icon'>🤖</span>
         <div class='card-title'>Random Forest Classifier</div>
-        <div class='card-desc'>Train a model and evaluate accuracy, confusion matrix, and feature importance.</div>
     </div>
     """, unsafe_allow_html=True)
     if st.button("Train & Evaluate", key="btn_model"):
@@ -353,7 +350,7 @@ with col_d:
     <div class='feat-card'>
         <span class='card-icon'>🌺</span>
         <div class='card-title'>Predict Your Own Flower</div>
-        <div class='card-desc'>Adjust the measurements and predict the species in real time.</div>
+        <div class='card-desc'>Adjust the measurements and predict the species.</div>
     </div>
     """, unsafe_allow_html=True)
     p1, p2 = st.columns(2)

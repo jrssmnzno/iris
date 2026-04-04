@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 
 st.set_page_config(
     page_title="Iris Flower Predictor",
@@ -23,7 +22,7 @@ html, body, [class*="css"] {
 }
 .stApp { background-color: #0e0e12; }
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding: 2rem 2.5rem 4rem; max-width: 800px; }
+.block-container { padding: 2rem 2.5rem 4rem; max-width: 860px; }
 
 .hero {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -119,7 +118,6 @@ html, body, [class*="css"] {
 .prob-bar-fill {
     height: 100%;
     border-radius: 99px;
-    transition: width 0.4s ease;
 }
 .prob-val {
     font-family: 'DM Mono', monospace;
@@ -128,6 +126,41 @@ html, body, [class*="css"] {
     width: 36px;
     text-align: right;
     flex-shrink: 0;
+}
+
+.dataset-card {
+    background: #13131d;
+    border: 1px solid #252535;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+.dataset-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.dataset-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: #e8d5c4;
+}
+.dataset-badge {
+    background: #1e1e2e;
+    border: 1px solid #2a2a3a;
+    border-radius: 99px;
+    padding: 0.25rem 0.8rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #c9a96e;
+}
+
+/* highlight row matching user input */
+.your-input-row {
+    background: #1a2e1a !important;
 }
 
 .stButton > button {
@@ -144,12 +177,45 @@ html, body, [class*="css"] {
     margin-top: 0.5rem !important;
 }
 .stButton > button:hover { opacity: 0.85 !important; }
-
 .stSlider > div > div > div { background: #c9a96e !important; }
-
 div[data-testid="stSlider"] label {
     font-size: 0.82rem !important;
     color: #8b8fa8 !important;
+}
+
+/* Tab styling */
+.stTabs [data-baseweb="tab-list"] {
+    background: #1a1a2a !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: #5a5a78 !important;
+    border-radius: 8px !important;
+    font-size: 0.82rem !important;
+    font-family: 'DM Sans', sans-serif !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #252535 !important;
+    color: #e8d5c4 !important;
+}
+
+/* Dataframe dark theme */
+.stDataFrame {
+    border-radius: 10px;
+    overflow: hidden;
+}
+[data-testid="stDataFrameResizable"] {
+    background: #0e0e12 !important;
+}
+
+/* Divider */
+.divider {
+    border: none;
+    border-top: 1px solid #1e1e2e;
+    margin: 2rem 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -159,29 +225,31 @@ div[data-testid="stSlider"] label {
 def load_data():
     iris = load_iris()
     df = pd.DataFrame(iris.data, columns=iris.feature_names)
+    df['species'] = pd.Categorical.from_codes(iris.target, iris.target_names)
     return df, iris
 
 @st.cache_resource
 def train_model():
-    _, iris = load_data()
-    X = pd.DataFrame(iris.data, columns=iris.feature_names)
+    df, iris = load_data()
+    X = df[iris.feature_names]
     y = iris.target
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
-    return model, iris
+    return model
 
 df, iris = load_data()
-model, iris = train_model()
+model = train_model()
 
-COLORS = ['#c9a96e', '#6ea8c9', '#6ec98a']
+COLORS  = ['#c9a96e', '#6ea8c9', '#6ec98a']
 SPECIES_EMOJI = {'setosa': '🌼', 'versicolor': '🌿', 'virginica': '🌺'}
+SPECIES_COLOR = {'setosa': '#c9a96e', 'versicolor': '#6ea8c9', 'virginica': '#6ec98a'}
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class='hero'>
     <h1>Iris Predictor</h1>
-    <p>Enter flower measurements below and the model will identify the species.</p>
+    <p>Enter flower measurements — the model will identify the species instantly.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -200,23 +268,24 @@ with col3:
     pl = st.slider("Petal Length (cm)", 1.0, 7.0, 4.0, 0.1, key="pl")
 with col4:
     pw = st.slider("Petal Width (cm)",  0.1, 2.5, 1.2, 0.1, key="pw")
-
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ── Predict Button ────────────────────────────────────────────────────────────
 predict_clicked = st.button("🔍 Predict Species", key="btn_pred")
 
 # ── Result ────────────────────────────────────────────────────────────────────
+predicted_species = None
 if predict_clicked:
     input_df = pd.DataFrame([[sl, sw, pl, pw]], columns=iris.feature_names)
-    pred = model.predict(input_df)[0]
-    proba = model.predict_proba(input_df)[0]
-    species_name = iris.target_names[pred]
-    emoji = SPECIES_EMOJI.get(species_name, '🌸')
+    pred      = model.predict(input_df)[0]
+    proba     = model.predict_proba(input_df)[0]
+    predicted_species = iris.target_names[pred]
+    emoji     = SPECIES_EMOJI.get(predicted_species, '🌸')
+    sp_color  = SPECIES_COLOR.get(predicted_species, '#6ec98a')
 
     st.markdown(f"""
-    <div class='result-box'>
-        <span class='species-name'>{emoji} {species_name.capitalize()}</span>
+    <div class='result-box' style='border-color:{sp_color}40; background:{sp_color}12;'>
+        <span class='species-name' style='color:{sp_color};'>{emoji} {predicted_species.capitalize()}</span>
         <span class='result-label'>Predicted Species</span>
     </div>
     """, unsafe_allow_html=True)
@@ -226,10 +295,88 @@ if predict_clicked:
         pct = int(prob * 100)
         st.markdown(f"""
         <div class='prob-row'>
-            <span class='prob-label'>{sp}</span>
+            <span class='prob-label'>{SPECIES_EMOJI.get(sp,'')} {sp}</span>
             <div class='prob-bar-bg'>
                 <div class='prob-bar-fill' style='width:{pct}%; background:{COLORS[i]};'></div>
             </div>
             <span class='prob-val'>{pct}%</span>
         </div>
         """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Divider ───────────────────────────────────────────────────────────────────
+st.markdown("<hr class='divider'>", unsafe_allow_html=True)
+
+# ── Dataset Table ─────────────────────────────────────────────────────────────
+st.markdown(f"""
+<div class='dataset-header'>
+    <span class='dataset-title'>📋 Iris Dataset Reference</span>
+    <span class='dataset-badge'>150 samples · 3 species · 4 features</span>
+</div>
+""", unsafe_allow_html=True)
+st.caption("Use this table to compare your inputs against real measurements in the dataset.")
+
+tab_all, tab_setosa, tab_versicolor, tab_virginica = st.tabs([
+    "🌸 All Species",
+    "🌼 Setosa",
+    "🌿 Versicolor",
+    "🌺 Virginica"
+])
+
+# Build a display df with rounded values and row index starting at 1
+display_df = df.copy()
+display_df.index = range(1, len(display_df) + 1)
+display_df.index.name = "#"
+for col in iris.feature_names:
+    display_df[col] = display_df[col].round(1)
+
+# If user has predicted, highlight rows closest to their input
+def highlight_closest(row, user_vals, feature_cols, top_n=3):
+    user_arr = pd.Series(user_vals, index=feature_cols)
+    dist = ((display_df[feature_cols] - user_arr) ** 2).sum(axis=1)
+    closest_idx = dist.nsmallest(top_n).index
+    if row.name in closest_idx:
+        return ['background-color: #1a2e20; color: #6ec98a'] * len(row)
+    return [''] * len(row)
+
+user_vals  = [sl, sw, pl, pw]
+feat_cols  = list(iris.feature_names)
+
+with tab_all:
+    if predict_clicked:
+        st.caption(f"🟢 Highlighted rows = closest matches to your input  ({sl}, {sw}, {pl}, {pw})")
+        styled = display_df.style.apply(
+            highlight_closest, user_vals=user_vals,
+            feature_cols=feat_cols, top_n=5, axis=1
+        )
+        st.dataframe(styled, use_container_width=True, height=360)
+    else:
+        st.dataframe(display_df, use_container_width=True, height=360)
+
+with tab_setosa:
+    sub = display_df[display_df['species'] == 'setosa']
+    st.caption(f"50 samples — small petals, wide sepals")
+    st.dataframe(sub, use_container_width=True, height=320)
+
+with tab_versicolor:
+    sub = display_df[display_df['species'] == 'versicolor']
+    st.caption(f"50 samples — medium measurements across all features")
+    st.dataframe(sub, use_container_width=True, height=320)
+
+with tab_virginica:
+    sub = display_df[display_df['species'] == 'virginica']
+    st.caption(f"50 samples — largest petals of the three species")
+    st.dataframe(sub, use_container_width=True, height=320)
+
+# ── Summary Stats ─────────────────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+with st.expander("📈 View Summary Statistics"):
+    st.dataframe(
+        df.groupby('species')[iris.feature_names]
+        .mean().round(2)
+        .rename_axis("Species")
+        .style.background_gradient(cmap='YlOrBr', axis=None),
+        use_container_width=True
+    )
+    st.caption("Average measurements per species — useful for manual comparison.")

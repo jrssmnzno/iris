@@ -229,17 +229,12 @@ def load_data():
     return df, iris
 
 @st.cache_resource
-def train_model():
-    df, iris = load_data()
-    X = df[iris.feature_names]
-    y = iris.target
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-    return model
+def load_model():
+    with open("iris_model.pkl", "rb") as f:
+        return pickle.load(f)
 
 df, iris = load_data()
-model = train_model()
+model = load_model()
 
 COLORS  = ['#c9a96e', '#6ea8c9', '#6ec98a']
 SPECIES_EMOJI = {'setosa': '🌼', 'versicolor': '🌿', 'virginica': '🌺'}
